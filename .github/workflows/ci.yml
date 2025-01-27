@@ -17,6 +17,6 @@ jobs:
     - name: Install venv and dependencies
       run: ./setup.sh
     - name: pylint
-      run: ./run-pylint.sh
+      run: ./run-linter.sh
     - name: Tests
       run: ./run-tests.sh
