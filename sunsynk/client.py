@@ -16,7 +16,6 @@ class InvalidCredentialsException(Exception):
 
 
 class SunsynkClient:
-
     @classmethod
     async def create(cls, username: str, password: str, base_url: str = None):
         self = SunsynkClient(username, password, base_url)
