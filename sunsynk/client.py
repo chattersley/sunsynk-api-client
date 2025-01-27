@@ -6,22 +6,23 @@ from sunsynk.input import Input
 from sunsynk.inverter import Inverter
 from sunsynk.output import Output
 from sunsynk.plant import Plant
+from sunsynk.gateway import Gateway
+from sunsynk.notification import Notification
 
 
 class InvalidCredentialsException(Exception):
     def __init__(self):
-        super().__init__('Invalid username or password')
+        super().__init__("Invalid username or password")
 
 
 class SunsynkClient:
-
     @classmethod
     async def create(cls, username: str, password: str, base_url: str = None):
         self = SunsynkClient(username, password, base_url)
         return await self.login()
 
-    def __init__(self, username: str, password: str, base_url: str=None):
-        self.base_url = 'https://pv.inteless.com' if base_url is None else base_url
+    def __init__(self, username: str, password: str, base_url: str = None):
+        self.base_url = "https://pv.inteless.com" if base_url is None else base_url
         self.session = aiohttp.ClientSession()
         self.access_token = None
         self.refresh_token = None
@@ -38,72 +39,97 @@ class SunsynkClient:
     async def close(self):
         await self.session.close()
 
-    async def get_plants(self) -> list[Plant]:
-        resp = await self.__get('api/v1/plants?page=1&limit=10&name=&status=')
+    async def get_gateways(self) -> list[Gateway]:
+        resp = await self.__get(
+            "api/v1/gateways?page=1&limit=10&status=-1&sn=&plantId=&uploadCycle=-1&softVer=&hardVer=&invSn=&protocol=-1&agentCompanyId=-1&lan=en"
+        )
         body = await resp.json()
-        plants = body['data']['infos']
+        gateways = body["data"]["infos"]
+        return [Gateway(data) for data in gateways]
+
+    async def get_plants(self) -> list[Plant]:
+        resp = await self.__get("api/v1/plants?page=1&limit=10&name=&status=")
+        body = await resp.json()
+        plants = body["data"]["infos"]
         return [Plant(data) for data in plants]
 
     async def get_inverters(self) -> list[Inverter]:
-        resp = await self.__get('api/v1/inverters?page=1&limit=10&total=0&status=-1&sn=&plantId=&type=-2&softVer=&' \
-                                'hmiVer=&agentCompanyId=-1&gsn=')
+        resp = await self.__get(
+            "api/v1/inverters?page=1&limit=10&total=0&status=-1&sn=&plantId=&type=-2&softVer=&"
+            "hmiVer=&agentCompanyId=-1&gsn="
+        )
         body = await resp.json()
-        inverters = body['data']['infos']
+        inverters = body["data"]["infos"]
         return [Inverter(data) for data in inverters]
 
     async def get_inverter_realtime_input(self, inverter_sn: str) -> Input:
-        resp = await self.__get(f'api/v1/inverter/{inverter_sn}/realtime/input')
+        resp = await self.__get(f"api/v1/inverter/{inverter_sn}/realtime/input")
         body = await resp.json()
-        return Input(body['data'])
+        return Input(body["data"])
 
     async def get_inverter_realtime_output(self, inverter_sn: str) -> Output:
-        resp = await self.__get(f'api/v1/inverter/{inverter_sn}/realtime/output')
+        resp = await self.__get(f"api/v1/inverter/{inverter_sn}/realtime/output")
         body = await resp.json()
-        return Output(body['data'])
+        return Output(body["data"])
 
     async def get_inverter_realtime_grid(self, inverter_sn: str) -> Grid:
-        resp = await self.__get(f'api/v1/inverter/grid/{inverter_sn}/realtime?sn={inverter_sn}')
+        resp = await self.__get(
+            f"api/v1/inverter/grid/{inverter_sn}/realtime?sn={inverter_sn}"
+        )
         body = await resp.json()
-        return Grid(body['data'])
+        return Grid(body["data"])
 
     async def get_inverter_realtime_battery(self, inverter_sn: str) -> Battery:
-        resp = await self.__get(f'api/v1/inverter/battery/{inverter_sn}/realtime?sn={inverter_sn}&lan')
+        resp = await self.__get(
+            f"api/v1/inverter/battery/{inverter_sn}/realtime?sn={inverter_sn}&lan"
+        )
         body = await resp.json()
-        return Battery(body['data'])
+        return Battery(body["data"])
+
+    async def get_notifications(self) -> list[Notification]:
+        resp = await self.__get(
+            "api/v1/messages?pageSize=10&pageNumber=1&status=-1&lan=en"
+        )
+        body = await resp.json()
+        notifications = body["data"]["infos"]
+        return [Notification.from_dict(data) for data in notifications]
+        # return [Notification(data) for data in notifications]
 
     async def __get(self, path: str, attempts: int = 1):
-        resp = await self.session.get(self.__url(path), headers=self.__headers(), timeout=20)
+        resp = await self.session.get(
+            self.__url(path), headers=self.__headers(), timeout=20
+        )
         if resp.status == 401 and attempts == 1:
             await self.login()
             return await self.__get(path, attempts=attempts + 1)
         return resp
 
     def __headers(self) -> dict[str, str]:
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
         if self.access_token:
-            headers['Authorization'] = f"Bearer {self.access_token}"
+            headers["Authorization"] = f"Bearer {self.access_token}"
         return headers
 
     async def login(self):
         payload = {
-            'username': self.username,
-            'password': self.password,
-            'grant_type': 'password',
-            'client_id': 'csp-web'
+            "username": self.username,
+            "password": self.password,
+            "grant_type": "password",
+            "client_id": "csp-web",
         }
-        resp = await self.session.post(self.__url('oauth/token'),
-                                       headers={"Content-Type": "application/json"},
-                                       timeout=20,
-                                       json=payload)
+        resp = await self.session.post(
+            self.__url("oauth/token"),
+            headers={"Content-Type": "application/json"},
+            timeout=20,
+            json=payload,
+        )
         if resp.status == 200:
             resp_body = await resp.json()
-            if resp_body['success']:
-                self.access_token = resp_body['data']['access_token']
-                self.refresh_token = resp_body['data']['refresh_token']
+            if resp_body["success"]:
+                self.access_token = resp_body["data"]["access_token"]
+                self.refresh_token = resp_body["data"]["refresh_token"]
                 return self
         raise InvalidCredentialsException()
 
     def __url(self, path: str) -> str:
-        return f'{self.base_url}/{path}'
+        return f"{self.base_url}/{path}"
