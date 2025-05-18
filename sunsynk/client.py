@@ -45,7 +45,7 @@ class SunsynkClient:
         )
         body = await resp.json()
         gateways = body["data"]["infos"]
-        return [Gateway(data) for data in gateways]
+        return [Gateway.from_dict(data) for data in gateways]
 
     async def get_plants(self) -> list[Plant]:
         resp = await self.__get("api/v1/plants?page=1&limit=10&name=&status=")

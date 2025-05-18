@@ -135,3 +135,4 @@ dmypy.json
 
 # dotenv
 .env
+models.json

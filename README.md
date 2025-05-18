@@ -31,3 +31,7 @@ An API client library for reading data from the Sunsynk API that is used by the 
         print('Done!')
     
     asyncio.run(main())
+
+## 
+pytest sunsynk/octopus_test.py --log-cli-level=debug
+pytest sunsynk/plant_income_test.py -k test_parse_invalid_constant_price -vv

@@ -1,36 +1,54 @@
-import datetime
-
-from sunsynk.resource import Resource
 from sunsynk.plant_summary import PlantSummary
 
+from dataclasses import dataclass, field
+from dataclasses_json import dataclass_json, config
+from datetime import datetime
+from marshmallow import fields, Schema
+# from marshmallow.fields import String
 
-class Gateway(Resource):
-    def __init__(self, data):
-        self.id = data["id"]
-        self.sn = data["sn"]
-        self.key = data["key"]
-        self.status = data["status"]
-        self.communication_type = data["commType"]
-        self.signal = data["signal"]
-        self.software_version = data["softVer"]
-        self.hardware_version = data["hardVer"]
-        self.updated_at = datetime.datetime.strptime(
-            data["updateAt"], "%Y-%m-%dT%H:%M:%SZ"
+
+@dataclass_json
+@dataclass
+class Gateway:
+    id: int
+    sn: str
+    key: str
+    status: int
+    communication_type: int = field(metadata=config(field_name="commType"))
+    signal: int
+    # software_version: str = fields.Str(data_key="softVer")
+    software_version: str = field(metadata=config(field_name="softVer"))
+    hardware_version: str = field(metadata=config(field_name="hardVer"))
+    updated_at: str = field(metadata=config(field_name="updateAt"))
+    # updated_at: datetime = field(
+    #     metadata=config(
+    #         field_name="updateAt",
+    #         encoder=datetime.isoformat,
+    #         decoder=datetime.fromisoformat,
+    #         mm_field=fields.DateTime(format="iso"),
+    #     )
+    # )
+    protocol_type: int = field(metadata=config(field_name="protocolType"))
+    model: str
+    alias: str | None
+    lldt: datetime = field(
+        metadata=config(
+            field_name="lldt",
+            encoder=datetime.isoformat,
+            decoder=datetime.fromisoformat,
+            mm_field=fields.DateTime(format="iso"),
         )
-        self.protocolType = data["protocolType"]
-        self.model = data["model"]
-        self.alias = data["alias"]
-        self.lldt = datetime.datetime.strptime(data["lldt"], "%Y-%m-%dT%H:%M:%SZ")
-        self.upload_cycle = data["uploadCycle"]
-        self.sgcc = data["sgcc"]
-        self.iccid = data["iccid"]
-        self.device_name = data["devName"]
-        self.server_id = data["serverId"]
-        self.server_name = data["serverName"]
-        self.brand = data["brand"]
-        self.plant = PlantSummary(data.get("plant")) if "plant" in data.keys() else None
-        self.agent = data["agent"]
-        self.communication_type_name = data["commTypeName"]
-        self.proto = data["proto"]
-        self.do_sum = data["doSum"]
-        self.do_state = data["doState"]
+    )
+    upload_cycle: int = field(metadata=config(field_name="uploadCycle"))
+    sgcc: int
+    iccid: str
+    device_name: str = field(metadata=config(field_name="devName"))
+    server_id: str | None = field(metadata=config(field_name="serverId"))
+    server_name: str | None = field(metadata=config(field_name="serverName"))
+    brand: str | None
+    plant: PlantSummary
+    agent: str | None
+    communication_type_name: str = field(metadata=config(field_name="commTypeName"))
+    proto: str
+    do_sum: str | None = field(metadata=config(field_name="doSum"))
+    do_state: str | None = field(metadata=config(field_name="doState"))
