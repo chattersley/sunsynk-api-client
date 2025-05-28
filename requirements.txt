@@ -9,3 +9,4 @@ ruff==0.9.3
 dataclasses-json==0.6.7
 pydantic
 pandas
+aiohttp
