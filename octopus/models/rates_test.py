@@ -2,7 +2,9 @@ import logging
 from urllib.parse import urlencode
 from octopus.models.rates import Rates
 from pydantic_core import from_json, ValidationError
+import pandas as pd
 
+logger = logging.getLogger(__name__)
 
 def clean_nones(value):
     """
@@ -740,3 +742,8 @@ def test_parse_rates():
     rates = Rates.model_validate(from_json(rates_response))
 
     assert rates.count == 11518
+    valid_from = [x.valid_from for x in rates.results]
+    value_exc_vat = [x.value_exc_vat for x in rates.results]
+    prices = pd.Series(value_exc_vat, index=valid_from)
+    logger.debug('prices=')
+    logger.debug(prices)
