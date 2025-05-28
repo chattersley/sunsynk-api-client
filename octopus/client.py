@@ -54,8 +54,8 @@ class OctopusClient:
     ) -> Rates:
         params = urlencode(
             clean_nones(
-                {"period_from": period_from.strftime('%d-%m-%YT%H:%MZ') or period_from, "period_to": period_to.strftime('%d-%m-%YT%H:%MZ') or period_to, "page": page}
-            )
+                {"period_from": period_from.strftime('%Y-%m-%dT%H:%MZ') or period_from, "period_to": period_to.strftime('%Y-%m-%dT%H:%MZ') or period_to, "page": page}
+            ), safe=':+'
         )
         print(f"params: {params}")
         print(
